@@ -2,10 +2,12 @@ var net = require('net');
 
 // Create server
 var chatServer    = net.createServer();
-var port          = 9000;
-var defaultNick   = 'testNick';
-var lastClientNum = 0;
-var clientList    = [];
+    port          = 9000,
+    defaultNick   = 'testNick',
+    lastClientNum = 0,
+    clientList    = [],
+    server        = {'nick': '>'},
+    helpText      = 'No help at this time\n';
 
 // Add event listener 'connection' to the server
 chatServer.on('connection', function(client) {
@@ -14,6 +16,8 @@ chatServer.on('connection', function(client) {
 
         // Set default nick
         client.nick = getDefaultNick();
+        broadcast(server, client.nick + ' joined\n');
+
         // Add client to chatroom
         clientList.push(client);
 
@@ -25,18 +29,26 @@ chatServer.on('connection', function(client) {
                 if (/^\/nick/.test(clientData)) {
                     // Get nick from command string
                     nick = clientData.split(' ');
-                    clientList[clientList.indexOf(client)].nick = nick[1].trim();
+
+                    oldNick = client.nick;
+                    client.nick = nick[1].trim();
+
+                    broadcast(server, oldNick + ' is now known as ' + client.nick + '\n');
+                } else if (/^\/help/.test(clientData)) {
+                    broadcast(server, helpText);
                 }
             } else if (clientData.trim() == 'quit') {
-                broadcast('>', client.nick + ' quit\n');
+                broadcast(server, client.nick + ' quit\n');
 
                 // Close connection
                 client.end();
             } else {
-                broadcast(client.nick, clientData);
+                broadcast(client, clientData);
             }
         });
     });
+
+chatServer.listen(port);
 
 /**
  * Send message to all chatroom's clients
@@ -44,10 +56,17 @@ chatServer.on('connection', function(client) {
  * @param string sender client's nick
  * @param string data   string to send to clients
  */
-var broadcast = function(sender, data) {
+function broadcast(sender, data) {
+    // Write to all clients
     for (var i = 0; i < clientList.length; i++) {
-        // write to all clients
-        clientList[i].write(sender + ': ' + data);
+        if (sender !== clientList[i]) {
+            // If server
+            if (sender.nick === '>') {
+                clientList[i].write(sender.nick + ' ' + data);
+            } else {
+                clientList[i].write(sender.nick + ': ' + data);
+            }
+        }
     }
 }
 
@@ -56,11 +75,9 @@ var broadcast = function(sender, data) {
  *
  * @return string default nick
  */
-var getDefaultNick = function() {
+function getDefaultNick () {
     lastClientNum++;
 
     return defaultNick + lastClientNum;
 }
-
-chatServer.listen(port);
 
