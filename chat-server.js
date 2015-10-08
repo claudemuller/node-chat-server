@@ -13,6 +13,7 @@ var chatServer    = net.createServer();
 chatServer.on('connection', function(client) {
         // Send text to client
         client.write('> Welcome ;)\n');
+        log(client.remoteAddress + '[' + client.remotePort + '] connected');
 
         // Set default nick
         client.nick = getDefaultNick();
@@ -25,6 +26,8 @@ chatServer.on('connection', function(client) {
             // Convert buffer/byte array to string
             var clientData = data.toString();
 
+            log(client.remoteAddress + '[' + client.remotePort + '] -> ' + clientData);
+
             if (/^\//.test(clientData)) {
                 if (/^\/nick/.test(clientData)) {
                     // Get nick from command string
@@ -36,12 +39,12 @@ chatServer.on('connection', function(client) {
                     broadcast(server, oldNick + ' is now known as ' + client.nick + '\n');
                 } else if (/^\/help/.test(clientData)) {
                     broadcast(server, helpText);
-                }
-            } else if (clientData.trim() == 'quit') {
-                broadcast(server, client.nick + ' quit\n');
+                } else if (/^\/quit/.test(clientData)) {
+                    broadcast(server, client.nick + ' quit\n');
 
-                // Close connection
-                client.end();
+                    // Close connection
+                    client.end();
+                }
             } else {
                 broadcast(client, clientData);
             }
@@ -79,5 +82,14 @@ function getDefaultNick () {
     lastClientNum++;
 
     return defaultNick + lastClientNum;
+}
+
+/**
+ * Log to the server console
+ *
+ * @param string message the message to log to console
+ */
+function log(message) {
+    console.log(message);
 }
 
