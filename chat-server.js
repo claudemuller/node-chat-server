@@ -29,7 +29,7 @@ chatServer.on('connection', function(client) {
             log(client.remoteAddress + '[' + client.remotePort + '] -> ' + clientData);
 
             if (/^\//.test(clientData)) {
-                if (/^\/nick/.test(clientData)) {
+                if (/^\/nick/.test(clientData)) {                       // if nick command
                     // Get nick from command string
                     nick = clientData.split(' ');
 
@@ -37,9 +37,9 @@ chatServer.on('connection', function(client) {
                     client.nick = nick[1].trim();
 
                     broadcast(server, oldNick + ' is now known as ' + client.nick + '\n');
-                } else if (/^\/help/.test(clientData)) {
+                } else if (/^\/help/.test(clientData)) {                // if help command
                     broadcast(server, helpText);
-                } else if (/^\/quit/.test(clientData)) {
+                } else if (/^\/quit/.test(clientData)) {                // if quit command
                     broadcast(server, client.nick + ' quit\n');
 
                     // Close connection
