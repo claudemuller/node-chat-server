@@ -22,6 +22,7 @@ chatServer.on('connection', function(client) {
         // Add client to chatroom
         clientList.push(client);
 
+        // Add event listener 'data' to client when client sends data
         client.on('data', function(data) {
             // Convert buffer/byte array to string
             var clientData = data.toString();
@@ -49,6 +50,19 @@ chatServer.on('connection', function(client) {
                 broadcast(client, clientData);
             }
         });
+
+        // Add event listener 'end' to client when client disconnects
+        client.on('end', function() {
+            // Remove client from chatroom & allow to get garbage collected
+            clientList.splice(clientList.indexOf(client), 1);
+
+            log(client.remoteAddress + '[' + client.remotePort + '] disconnected');
+        });
+
+        // Log the errors
+        client.on('error', function(e) {
+            log(e);
+        });
     });
 
 chatServer.listen(port);
@@ -60,6 +74,8 @@ chatServer.listen(port);
  * @param string data   string to send to clients
  */
 function broadcast(sender, data) {
+    var cleanup = [];
+
     // Write to all clients
     for (var i = 0; i < clientList.length; i++) {
         if (sender !== clientList[i]) {
@@ -67,9 +83,19 @@ function broadcast(sender, data) {
             if (sender.nick === '>') {
                 clientList[i].write(sender.nick + ' ' + data);
             } else {
-                clientList[i].write(sender.nick + ': ' + data);
+                if (clientList[i].writable) {
+                    log(clientList[i].writeable);
+                    clientList[i].write(sender.nick + ': ' + data);
+                } else {
+                    cleanup.push(clientList[i]);
+                    clientList[i].destroy();
+                }
             }
         }
+    }
+
+    for (i = 0; i < cleanup.length; i++) {
+        clientList.splice(clientList.indexOf(cleanup[i]), 1);
     }
 }
 
